@@ -1,43 +1,35 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 
 public class ContextMenuManager : MonoBehaviour
 {
     public GameObject contextMenu; // Reference to the context menu panel
-    public Button[] buttons; // Array of buttons for different actions
+    public TextMeshProUGUI optionPrefab; // Prefab for the text options
     private Camera cam;
+    private GameObject currentTarget; // The object that was right-clicked
 
     void Start()
     {
         cam = Camera.main;
         contextMenu.SetActive(false); // Hide the context menu at start
-
-        // Add listeners to the buttons (assuming there are 3 buttons)
-        buttons[0].onClick.AddListener(() => OnExamine());
-        buttons[1].onClick.AddListener(() => OnPickUp());
-        buttons[2].onClick.AddListener(() => OnUse());
     }
 
     void Update()
     {
         if (Input.GetMouseButtonDown(1)) // Right-click detection
         {
-            // Get the position of the mouse in the world
             Vector3 screenPosition = Input.mousePosition;
-            contextMenu.transform.position = screenPosition;
 
-            // Raycast to detect what object is being right-clicked
             Ray ray = cam.ScreenPointToRay(screenPosition);
             RaycastHit hit;
 
             if (Physics.Raycast(ray, out hit))
             {
-                // Show the context menu at the mouse position
-                contextMenu.SetActive(true);
-                // Optionally, set the context for the actions, e.g., the clicked object
-                // SetContext(hit.collider.gameObject);
+                // Set the current target and show the context menu
+                currentTarget = hit.collider.gameObject;
+                ShowContextMenu(screenPosition, currentTarget);
             }
         }
 
@@ -48,28 +40,68 @@ public class ContextMenuManager : MonoBehaviour
         }
     }
 
-    // Example action methods
-    void OnExamine()
+    void ShowContextMenu(Vector3 position, GameObject target)
     {
-        Debug.Log("Examine action");
-        contextMenu.SetActive(false);
+        // Clear existing options
+        foreach (Transform child in contextMenu.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Check if the object implements IInteractable
+        IInteractable interactable = target.GetComponent<IInteractable>();
+        if (interactable != null)
+        {
+            List<string> actions = interactable.GetActions();
+
+            // Create a text option for each action
+            foreach (string action in actions)
+            {
+                TextMeshProUGUI option = Instantiate(optionPrefab, contextMenu.transform);
+                option.text = action;
+                option.color = Color.blue; // Customize the color as desired
+                option.fontSize = 24; // Customize the font size as desired
+
+                // Set up the handler for clicks
+                OptionHandler handler = option.gameObject.AddComponent<OptionHandler>();
+                handler.Setup(action, this);
+            }
+
+            // Show the context menu
+            contextMenu.SetActive(true);
+            contextMenu.transform.position = position;
+        }
     }
 
-    void OnPickUp()
+    public void OnActionSelected(string action)
     {
-        Debug.Log("Pick Up action");
+        Debug.Log("Action selected: " + action);
+
+        // Perform action logic based on the selected action and currentTarget
+        switch (action)
+        {
+            case "Talk":
+                // Logic for talking to NPCs
+                Debug.Log("Talk to NPC action");
+                break;
+            case "Examine":
+                // Logic for examining objects
+                Debug.Log("Examine action");
+                contextMenu.SetActive(false);
+                break;
+            case "Pick Up":
+                Debug.Log("Pick Up action");
+                contextMenu.SetActive(false);
+                // Logic for picking up items
+                break;
+            case "Use":
+                // Logic for using items
+                Debug.Log("Use item action");
+                contextMenu.SetActive(false);
+                break;
+            // Add more cases for additional actions
+        }
+
         contextMenu.SetActive(false);
     }
-
-    void OnUse()
-    {
-        Debug.Log("Use action");
-        contextMenu.SetActive(false);
-    }
-
-    // Optionally, a method to set context, like the object being interacted with
-    // void SetContext(GameObject obj)
-    // {
-    //     // Store the object to interact with
-    // }
 }
