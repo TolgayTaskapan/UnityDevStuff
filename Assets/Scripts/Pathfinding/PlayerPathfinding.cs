@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.EventSystems;
 
 public class PlayerPathfinding : MonoBehaviour
 {
@@ -11,7 +12,7 @@ public class PlayerPathfinding : MonoBehaviour
     void Update()
     {
         // Check if the left mouse button is clicked
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !IsPointerOverUIElement())
         {
             // Create a ray from the camera to the mouse position
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
@@ -25,4 +26,9 @@ public class PlayerPathfinding : MonoBehaviour
             }
         }
     }
+
+    private bool IsPointerOverUIElement() {
+        return EventSystem.current.IsPointerOverGameObject();
+    }
 }
+

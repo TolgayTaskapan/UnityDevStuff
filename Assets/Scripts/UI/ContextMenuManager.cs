@@ -41,37 +41,49 @@ public class ContextMenuManager : MonoBehaviour
     }
 
     void ShowContextMenu(Vector3 position, GameObject target)
+{
+    // Clear existing options
+    foreach (Transform child in contextMenu.transform)
     {
-        // Clear existing options
-        foreach (Transform child in contextMenu.transform)
-        {
-            Destroy(child.gameObject);
-        }
-
-        // Check if the object implements IInteractable
-        IInteractable interactable = target.GetComponent<IInteractable>();
-        if (interactable != null)
-        {
-            List<string> actions = interactable.GetActions();
-
-            // Create a text option for each action
-            foreach (string action in actions)
-            {
-                TextMeshProUGUI option = Instantiate(optionPrefab, contextMenu.transform);
-                option.text = action;
-                option.color = Color.blue; // Customize the color as desired
-                option.fontSize = 24; // Customize the font size as desired
-
-                // Set up the handler for clicks
-                OptionHandler handler = option.gameObject.AddComponent<OptionHandler>();
-                handler.Setup(action, this);
-            }
-
-            // Show the context menu
-            contextMenu.SetActive(true);
-            contextMenu.transform.position = position;
-        }
+        Destroy(child.gameObject);
     }
+
+    // Check if the object implements IInteractable
+    IInteractable interactable = target.GetComponent<IInteractable>();
+    if (interactable != null)
+    {
+        List<string> actions = interactable.GetActions();
+
+        // Calculate the starting position and offset for the options
+        float optionHeight = optionPrefab.rectTransform.sizeDelta.y;
+        float spacing = 5f; // Space between options
+        Vector3 startPosition = new Vector3(position.x, position.y - optionHeight / 2, position.z);
+
+        // Create a text option for each action
+        for (int i = 0; i < actions.Count; i++)
+        {
+            string action = actions[i];
+            TextMeshProUGUI option = Instantiate(optionPrefab, contextMenu.transform);
+            option.text = action;
+            option.color = Color.blue; // Customize the color as desired
+            option.fontSize = 24; // Customize the font size as desired
+
+            // Position each option with spacing
+            RectTransform optionTransform = option.GetComponent<RectTransform>();
+            optionTransform.anchoredPosition = new Vector2(0, -i * (optionHeight + spacing));
+
+            // Set up the handler for clicks
+            OptionHandler handler = option.gameObject.AddComponent<OptionHandler>();
+            handler.Setup(action, this);
+        }
+
+        // Adjust context menu size and show it
+        RectTransform contextMenuTransform = contextMenu.GetComponent<RectTransform>();
+        contextMenuTransform.sizeDelta = new Vector2(contextMenuTransform.sizeDelta.x, actions.Count * (optionHeight + spacing));
+        contextMenu.SetActive(true);
+        contextMenu.transform.position = position;
+    }
+}
 
     public void OnActionSelected(string action)
     {
