@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class InventoryUI : MonoBehaviour
 {
@@ -13,6 +14,12 @@ public class InventoryUI : MonoBehaviour
     private void Start()
     {
         inventory = FindObjectOfType<Inventory>();
+        Image prefabIcon = slotPrefab.transform.Find("ItemIcon").GetComponent<Image>();
+        if (prefabIcon != null)
+        {
+            icon = prefabIcon;
+        }
+
         UpdateUI();
     }
 
@@ -23,13 +30,16 @@ public class InventoryUI : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-
+    
         // Create new slots
-        foreach (InventorySlot slot in inventory.inventorySlots)
-        {
+        foreach (InventorySlot slot in inventory.inventorySlots) {
             GameObject slotObj = Instantiate(slotPrefab, inventoryPanel.transform);
-            Image icon = slotObj.transform.Find("Icon").GetComponent<Image>();
-            Text quantityText = slotObj.transform.Find("Quantity").GetComponent<Text>();
+
+            // Find and assign the Image component for the item icon
+            Image icon = slotObj.transform.Find("ItemIcon").GetComponent<Image>();
+
+            // Find and assign the TextMeshProUGUI component for the quantity
+            TextMeshProUGUI quantityText = slotObj.transform.Find("Quantity").GetComponent<TextMeshProUGUI>();
 
             if (slot.item != null)
             {
@@ -37,16 +47,14 @@ public class InventoryUI : MonoBehaviour
                 icon.enabled = true;
                 quantityText.text = slot.quantity > 1 ? slot.quantity.ToString() : "";
             }
-            else
-            {
+            else {
                 icon.enabled = false;
                 quantityText.text = "";
             }
-        }
+        }    
     }
 
-        public void SetItem(Sprite iconSprite)
-    {
+    public void SetItem(Sprite iconSprite) {
         if (iconSprite != null)
         {
             icon.sprite = iconSprite;
