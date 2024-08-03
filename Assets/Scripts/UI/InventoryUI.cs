@@ -8,6 +8,7 @@ public class InventoryUI : MonoBehaviour
     public GameObject inventoryPanel;
     public GameObject slotPrefab;
     private Inventory inventory;
+    public Image icon;
 
     private void Start()
     {
@@ -41,6 +42,20 @@ public class InventoryUI : MonoBehaviour
                 icon.enabled = false;
                 quantityText.text = "";
             }
+        }
+    }
+
+        public void SetItem(Sprite iconSprite)
+    {
+        if (iconSprite != null)
+        {
+            icon.sprite = iconSprite;
+            icon.enabled = true;
+        }
+        else
+        {
+            icon.sprite = null;
+            icon.enabled = false;
         }
     }
 }
