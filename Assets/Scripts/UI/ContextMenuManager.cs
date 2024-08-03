@@ -2,18 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI; // Include UI namespace for Button
 
 public class ContextMenuManager : MonoBehaviour
 {
     public GameObject contextMenu; // Reference to the context menu panel
-    public TextMeshProUGUI optionPrefab; // Prefab for the text options
+    public Button optionPrefab; // Prefab for the button options
     private Camera cam;
     private GameObject currentTarget; // The object that was right-clicked
+    private bool optionClicked = false; // Flag to track if an option was clicked
 
     void Start()
     {
         cam = Camera.main;
         contextMenu.SetActive(false); // Hide the context menu at start
+        Debug.Log("ContextMenuManager initialized. Context menu hidden.");
     }
 
     void Update()
@@ -21,99 +24,116 @@ public class ContextMenuManager : MonoBehaviour
         if (Input.GetMouseButtonDown(1)) // Right-click detection
         {
             Vector3 screenPosition = Input.mousePosition;
+            Debug.Log("Right-click detected at screen position: " + screenPosition);
 
             Ray ray = cam.ScreenPointToRay(screenPosition);
             RaycastHit hit;
 
             if (Physics.Raycast(ray, out hit))
             {
-                // Set the current target and show the context menu
                 currentTarget = hit.collider.gameObject;
+                Debug.Log("Raycast hit: " + currentTarget.name);
+
                 ShowContextMenu(screenPosition, currentTarget);
+            }
+            else
+            {
+                Debug.Log("Raycast did not hit any collider.");
             }
         }
 
         if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(2)) // Left or middle click
         {
-            // Hide the context menu on any other click
-            contextMenu.SetActive(false);
+            Debug.Log("Left or middle mouse button clicked.");
+            if (!optionClicked)
+            {
+                Debug.Log("No option clicked. Hiding context menu.");
+                contextMenu.SetActive(false);
+            }
+            optionClicked = false; // Reset the flag for the next frame
         }
     }
 
     void ShowContextMenu(Vector3 position, GameObject target)
-{
-    // Clear existing options
-    foreach (Transform child in contextMenu.transform)
     {
-        Destroy(child.gameObject);
-    }
-
-    // Check if the object implements IInteractable
-    IInteractable interactable = target.GetComponent<IInteractable>();
-    if (interactable != null)
-    {
-        List<string> actions = interactable.GetActions();
-
-        // Calculate the starting position and offset for the options
-        float optionHeight = optionPrefab.rectTransform.sizeDelta.y;
-        float spacing = 5f; // Space between options
-        Vector3 startPosition = new Vector3(position.x, position.y - optionHeight / 2, position.z);
-
-        // Create a text option for each action
-        for (int i = 0; i < actions.Count; i++)
+        Debug.Log("Showing context menu for target: " + target.name);
+        // Clear existing options
+        foreach (Transform child in contextMenu.transform)
         {
-            string action = actions[i];
-            TextMeshProUGUI option = Instantiate(optionPrefab, contextMenu.transform);
-            option.text = action;
-            option.color = Color.blue; // Customize the color as desired
-            option.fontSize = 24; // Customize the font size as desired
-
-            // Position each option with spacing
-            RectTransform optionTransform = option.GetComponent<RectTransform>();
-            optionTransform.anchoredPosition = new Vector2(0, -i * (optionHeight + spacing));
-
-            // Set up the handler for clicks
-            OptionHandler handler = option.gameObject.AddComponent<OptionHandler>();
-            handler.Setup(action, this);
+            Destroy(child.gameObject);
+            Debug.Log("Destroyed previous context menu option.");
         }
 
-        // Adjust context menu size and show it
-        RectTransform contextMenuTransform = contextMenu.GetComponent<RectTransform>();
-        contextMenuTransform.sizeDelta = new Vector2(contextMenuTransform.sizeDelta.x, actions.Count * (optionHeight + spacing));
-        contextMenu.SetActive(true);
-        contextMenu.transform.position = position;
+        // Check if the object implements IInteractable
+        IInteractable interactable = target.GetComponent<IInteractable>();
+
+        if (interactable != null)
+        {
+            Debug.Log("IInteractable implementation found on target: " + target.name);
+            List<string> actions = interactable.GetActions();
+
+            float optionHeight = optionPrefab.GetComponent<RectTransform>().sizeDelta.y;
+            float spacing = 5f; // Space between options
+            Vector3 startPosition = new Vector3(position.x, position.y - optionHeight / 2, position.z);
+
+            for (int i = 0; i < actions.Count; i++)
+            {
+                string action = actions[i];
+                Button optionButton = Instantiate(optionPrefab, contextMenu.transform);
+                
+                // Set the action text on the button's child TextMeshProUGUI component
+                TextMeshProUGUI buttonText = optionButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null)
+                {
+                    buttonText.text = action;
+                }
+
+                // Position each option with spacing
+                RectTransform optionTransform = optionButton.GetComponent<RectTransform>();
+                optionTransform.anchoredPosition = new Vector2(0, -i * (optionHeight + spacing));
+                Debug.Log("Created option: " + action);
+
+                // Set up the handler for clicks
+                OptionHandler handler = optionButton.gameObject.AddComponent<OptionHandler>();
+                handler.Setup(action, this);
+            }
+
+            // Adjust context menu size and show it
+            RectTransform contextMenuTransform = contextMenu.GetComponent<RectTransform>();
+            contextMenuTransform.sizeDelta = new Vector2(contextMenuTransform.sizeDelta.x, actions.Count * (optionHeight + spacing));
+            contextMenu.SetActive(true);
+            contextMenu.transform.position = position;
+            Debug.Log("Context menu displayed with " + actions.Count + " options.");
+        }
+        else
+        {
+            Debug.LogError("No IInteractable implementation found on target: " + target.name);
+        }
     }
-}
 
     public void OnActionSelected(string action)
     {
+        optionClicked = true; // Mark that an option was clicked
         Debug.Log("Action selected: " + action);
 
-        // Perform action logic based on the selected action and currentTarget
-        switch (action)
+        if (currentTarget == null)
         {
-            case "Talk":
-                // Logic for talking to NPCs
-                Debug.Log("Talk to NPC action");
-                break;
-            case "Examine":
-                // Logic for examining objects
-                Debug.Log("Examine action");
-                contextMenu.SetActive(false);
-                break;
-            case "Pick Up":
-                Debug.Log("Pick Up action");
-                contextMenu.SetActive(false);
-                // Logic for picking up items
-                break;
-            case "Use":
-                // Logic for using items
-                Debug.Log("Use item action");
-                contextMenu.SetActive(false);
-                break;
-            // Add more cases for additional actions
+            Debug.LogError("No current target.");
+            return;
+        }
+
+        ItemInteractable itemInteractable = currentTarget.GetComponent<ItemInteractable>();
+        if (itemInteractable != null)
+        {
+            Debug.Log("Performing action: " + action + " on target: " + currentTarget.name);
+            itemInteractable.PerformAction(action);
+        }
+        else
+        {
+            Debug.LogError("ItemInteractable component not found on current target.");
         }
 
         contextMenu.SetActive(false);
+        Debug.Log("Context menu hidden after action selection.");
     }
 }

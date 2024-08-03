@@ -1,8 +1,8 @@
 using UnityEngine;
-using TMPro;
-using UnityEngine.EventSystems;
+using UnityEngine.UI; // Import for Button
+using TMPro; // Import for TextMeshProUGUI
 
-public class OptionHandler : MonoBehaviour, IPointerClickHandler
+public class OptionHandler : MonoBehaviour
 {
     private string action;
     private ContextMenuManager contextMenuManager;
@@ -11,10 +11,27 @@ public class OptionHandler : MonoBehaviour, IPointerClickHandler
     {
         this.action = action;
         this.contextMenuManager = contextMenuManager;
+
+        // Get the Button component attached to this GameObject
+        Button button = GetComponent<Button>();
+
+        // Check if Button component is present
+        if (button != null)
+        {
+            // Remove any previous listeners to avoid multiple triggers
+            button.onClick.RemoveAllListeners();
+            // Add the OnButtonClicked method as a listener for the onClick event
+            button.onClick.AddListener(OnButtonClicked);
+        }
+        else
+        {
+            Debug.LogError("Button component missing on OptionPrefab. Please attach a Button component.");
+        }
     }
 
-    public void OnPointerClick(PointerEventData eventData)
+    private void OnButtonClicked()
     {
+        Debug.Log("Button clicked: " + action);
         contextMenuManager.OnActionSelected(action);
     }
 }

@@ -3,19 +3,46 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class PlayerPathfinding : MonoBehaviour
 {
     public Camera cam; // Reference to the camera
     public NavMeshAgent agent; // Reference to the NavMeshAgent
 
-    void Update()
+    [Header("Input Settings")]
+    public InputActionAsset inputActions;
+    private InputAction moveAction;
+
+    private void Awake()
     {
-        // Check if the left mouse button is clicked
-        if (Input.GetMouseButtonDown(0) && !IsPointerOverUIElement())
+        // Get the action map and action for player movement
+        var gameplayActionMap = inputActions.FindActionMap("Gameplay"); // Ensure you have this action map defined
+        moveAction = gameplayActionMap.FindAction("Move"); // Ensure you have this action defined
+    }
+
+    private void OnEnable()
+    {
+        moveAction.Enable();
+        moveAction.performed += OnMove;
+    }
+
+    private void OnDisable()
+    {
+        moveAction.Disable();
+        moveAction.performed -= OnMove;
+    }
+
+    private void OnMove(InputAction.CallbackContext context)
+    {
+        // Check if the pointer is not over a UI element
+        if (!IsPointerOverUIElement())
         {
-            // Create a ray from the camera to the mouse position
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            // Get the screen position from the pointer's position
+            Vector2 screenPosition = context.ReadValue<Vector2>();
+
+            // Create a ray from the camera to the screen position
+            Ray ray = cam.ScreenPointToRay(screenPosition);
             RaycastHit hit;
 
             // Perform a raycast to check if it hits any object
@@ -27,8 +54,8 @@ public class PlayerPathfinding : MonoBehaviour
         }
     }
 
-    private bool IsPointerOverUIElement() {
+    private bool IsPointerOverUIElement()
+    {
         return EventSystem.current.IsPointerOverGameObject();
     }
 }
-
