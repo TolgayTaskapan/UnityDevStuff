@@ -1,56 +1,59 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 public class PlayerPathfinding : MonoBehaviour
 {
     public Camera cam; // Reference to the camera
     public NavMeshAgent agent; // Reference to the NavMeshAgent
 
-    [Header("Input Settings")]
-    public InputActionAsset inputActions;
     private InputAction moveAction;
 
     private void Awake()
     {
-        // Get the action map and action for player movement
-        var gameplayActionMap = inputActions.FindActionMap("Gameplay"); // Ensure you have this action map defined
-        moveAction = gameplayActionMap.FindAction("Move"); // Ensure you have this action defined
+        // Assume inputActions is assigned through the Inspector or script initialization
+        InputActionAsset inputActions = GetComponent<PlayerInput>().actions;
+        var gameplayActionMap = inputActions.FindActionMap("Gameplay");
+        moveAction = gameplayActionMap.FindAction("Move");
     }
 
     private void OnEnable()
     {
         moveAction.Enable();
-        moveAction.performed += OnMove;
+        moveAction.performed += OnMovePerformed;
     }
 
     private void OnDisable()
     {
         moveAction.Disable();
-        moveAction.performed -= OnMove;
+        moveAction.performed -= OnMovePerformed;
     }
 
-    private void OnMove(InputAction.CallbackContext context)
+    private void OnMovePerformed(InputAction.CallbackContext context)
     {
-        // Check if the pointer is not over a UI element
+        Debug.Log("Move action performed.");
         if (!IsPointerOverUIElement())
         {
-            // Get the screen position from the pointer's position
-            Vector2 screenPosition = context.ReadValue<Vector2>();
+            Vector2 screenPosition = Mouse.current.position.ReadValue();
+            Debug.Log($"Mouse position: {screenPosition}");
 
-            // Create a ray from the camera to the screen position
             Ray ray = cam.ScreenPointToRay(screenPosition);
             RaycastHit hit;
 
-            // Perform a raycast to check if it hits any object
             if (Physics.Raycast(ray, out hit))
             {
-                // Set the destination of the NavMeshAgent to the hit point
+                Debug.Log($"Raycast hit: {hit.point}");
                 agent.SetDestination(hit.point);
             }
+            else
+            {
+                Debug.Log("Raycast did not hit any objects.");
+            }
+        }
+        else
+        {
+            Debug.Log("Pointer is over a UI element, not moving.");
         }
     }
 
