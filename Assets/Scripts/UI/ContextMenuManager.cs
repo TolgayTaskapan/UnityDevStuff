@@ -2,7 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using UnityEngine.UI; // Include UI namespace for Button
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class ContextMenuManager : MonoBehaviour
 {
@@ -12,46 +13,56 @@ public class ContextMenuManager : MonoBehaviour
     private GameObject currentTarget; // The object that was right-clicked
     private bool optionClicked = false; // Flag to track if an option was clicked
 
+    private InputAction rightClickAction;
+    private InputAction leftClickAction;
+
     void Start()
     {
         cam = Camera.main;
         contextMenu.SetActive(false); // Hide the context menu at start
         Debug.Log("ContextMenuManager initialized. Context menu hidden.");
+
+        // Setup Input Actions
+        rightClickAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/rightButton");
+        leftClickAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/leftButton");
+
+        rightClickAction.performed += OnRightClick;
+        leftClickAction.performed += OnLeftClickOrMiddleClick;
+
+        rightClickAction.Enable();
+        leftClickAction.Enable();
     }
 
-    void Update()
+    private void OnRightClick(InputAction.CallbackContext context)
     {
-        if (Input.GetMouseButtonDown(1)) // Right-click detection
+        Vector3 screenPosition = Mouse.current.position.ReadValue();
+        Debug.Log("Right-click detected at screen position: " + screenPosition);
+
+        Ray ray = cam.ScreenPointToRay(screenPosition);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit))
         {
-            Vector3 screenPosition = Input.mousePosition;
-            Debug.Log("Right-click detected at screen position: " + screenPosition);
+            currentTarget = hit.collider.gameObject;
+            Debug.Log("Raycast hit: " + currentTarget.name);
 
-            Ray ray = cam.ScreenPointToRay(screenPosition);
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit))
-            {
-                currentTarget = hit.collider.gameObject;
-                Debug.Log("Raycast hit: " + currentTarget.name);
-
-                ShowContextMenu(screenPosition, currentTarget);
-            }
-            else
-            {
-                Debug.Log("Raycast did not hit any collider.");
-            }
+            ShowContextMenu(screenPosition, currentTarget);
         }
-
-        if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(2)) // Left or middle click
+        else
         {
-            Debug.Log("Left or middle mouse button clicked.");
-            if (!optionClicked)
-            {
-                Debug.Log("No option clicked. Hiding context menu.");
-                contextMenu.SetActive(false);
-            }
-            optionClicked = false; // Reset the flag for the next frame
+            Debug.Log("Raycast did not hit any collider.");
         }
+    }
+
+    private void OnLeftClickOrMiddleClick(InputAction.CallbackContext context)
+    {
+        Debug.Log("Left or middle mouse button clicked.");
+        if (!optionClicked)
+        {
+            Debug.Log("No option clicked. Hiding context menu.");
+            contextMenu.SetActive(false);
+        }
+        optionClicked = false; // Reset the flag for the next frame
     }
 
     void ShowContextMenu(Vector3 position, GameObject target)
@@ -80,7 +91,7 @@ public class ContextMenuManager : MonoBehaviour
             {
                 string action = actions[i];
                 Button optionButton = Instantiate(optionPrefab, contextMenu.transform);
-                
+
                 // Set the action text on the button's child TextMeshProUGUI component
                 TextMeshProUGUI buttonText = optionButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (buttonText != null)
@@ -135,5 +146,12 @@ public class ContextMenuManager : MonoBehaviour
 
         contextMenu.SetActive(false);
         Debug.Log("Context menu hidden after action selection.");
+    }
+
+    private void OnDestroy()
+    {
+        // Disable actions when the object is destroyed
+        rightClickAction.Disable();
+        leftClickAction.Disable();
     }
 }
