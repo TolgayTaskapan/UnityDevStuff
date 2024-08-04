@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Box
   m_EditorClassIdentifier: 
   itemName: White Box
-  icon: {fileID: 21300000, guid: 11ec4913b7efe0d48b4ff74f48bcf4d1, type: 3}
+  icon: {fileID: 21300000, guid: 96611995a056dad4e9205a15b231ba2a, type: 3}
   isStackable: 1
   maxStackSize: 64

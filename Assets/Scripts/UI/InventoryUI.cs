@@ -9,18 +9,26 @@ public class InventoryUI : MonoBehaviour
     public GameObject inventoryPanel;
     public GameObject slotPrefab;
     private Inventory inventory;
-    public Image icon;
 
     private void Start()
     {
-        inventory = FindObjectOfType<Inventory>();
-        Image prefabIcon = slotPrefab.transform.Find("ItemIcon").GetComponent<Image>();
-        if (prefabIcon != null)
+        inventory = Inventory.Instance;
+        if (inventory != null)
         {
-            icon = prefabIcon;
+            // Subscribe to the inventory changed event
+            inventory.InventoryChanged += UpdateUI;
         }
 
         UpdateUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (inventory != null)
+        {
+            // Unsubscribe from the event when the object is destroyed
+            inventory.InventoryChanged -= UpdateUI;
+        }
     }
 
     public void UpdateUI()
@@ -30,40 +38,38 @@ public class InventoryUI : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-    
-        // Create new slots
-        foreach (InventorySlot slot in inventory.inventorySlots) {
-            GameObject slotObj = Instantiate(slotPrefab, inventoryPanel.transform);
 
-            // Find and assign the Image component for the item icon
-            Image icon = slotObj.transform.Find("ItemIcon").GetComponent<Image>();
-
-            // Find and assign the TextMeshProUGUI component for the quantity
-            TextMeshProUGUI quantityText = slotObj.transform.Find("Quantity").GetComponent<TextMeshProUGUI>();
-
+        // Create new slots based on inventory data
+        foreach (InventorySlot slot in inventory.inventorySlots)
+        {
             if (slot.item != null)
             {
-                icon.sprite = slot.item.icon;
-                icon.enabled = true;
-                quantityText.text = slot.quantity > 1 ? slot.quantity.ToString() : "";
-            }
-            else {
-                icon.enabled = false;
-                quantityText.text = "";
-            }
-        }    
-    }
+                GameObject slotObj = Instantiate(slotPrefab, inventoryPanel.transform);
 
-    public void SetItem(Sprite iconSprite) {
-        if (iconSprite != null)
-        {
-            icon.sprite = iconSprite;
-            icon.enabled = true;
-        }
-        else
-        {
-            icon.sprite = null;
-            icon.enabled = false;
+                // Ensure the ItemIcon and Quantity components exist and are correctly assigned
+                Image icon = slotObj.transform.Find("ItemIcon")?.GetComponent<Image>();
+                TextMeshProUGUI quantityText = slotObj.transform.Find("Quantity")?.GetComponent<TextMeshProUGUI>();
+
+                if (icon != null && slot.item.icon != null)
+                {
+                    icon.sprite = slot.item.icon;
+                    icon.enabled = true;
+                }
+                else
+                {
+                    if (icon != null)
+                        icon.enabled = false;
+                }
+
+                if (quantityText != null)
+                {
+                    quantityText.text = slot.quantity > 1 ? slot.quantity.ToString() : "";
+                }
+                else
+                {
+                    Debug.LogError("Quantity TextMeshProUGUI component not found in the slot prefab.");
+                }
+            }
         }
     }
 }
