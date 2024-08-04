@@ -4,11 +4,14 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class ContextMenuManager : MonoBehaviour
 {
     public GameObject contextMenu; // Reference to the context menu panel
     public Button optionPrefab; // Prefab for the button options
+    public GraphicRaycaster graphicRaycaster; // Reference to the GraphicRaycaster component
+    public EventSystem eventSystem; // Reference to the EventSystem
     private Camera cam;
     private GameObject currentTarget; // The object that was right-clicked
     private bool optionClicked = false; // Flag to track if an option was clicked
@@ -57,12 +60,41 @@ public class ContextMenuManager : MonoBehaviour
     private void OnLeftClickOrMiddleClick(InputAction.CallbackContext context)
     {
         Debug.Log("Left or middle mouse button clicked.");
-        if (!optionClicked)
+
+        // Set up PointerEventData with current mouse position
+        PointerEventData pointerData = new PointerEventData(eventSystem)
+        {
+            position = Mouse.current.position.ReadValue()
+        };
+
+        // Create a list to receive all results
+        List<RaycastResult> results = new List<RaycastResult>();
+
+        // Raycast to UI elements
+        graphicRaycaster.Raycast(pointerData, results);
+
+        // Check if any UI element is clicked
+        bool uiClicked = false;
+        foreach (RaycastResult result in results)
+        {
+            Debug.Log($"Clicked on {result.gameObject.name}");
+
+            OptionHandler handler = result.gameObject.GetComponent<OptionHandler>();
+            if (handler != null)
+            {
+                handler.OnButtonClicked();
+                uiClicked = true;
+                break;
+            }
+        }
+
+        if (!uiClicked)
         {
             Debug.Log("No option clicked. Hiding context menu.");
             contextMenu.SetActive(false);
         }
-        optionClicked = false; // Reset the flag for the next frame
+
+        optionClicked = uiClicked; // Update the flag based on UI interaction
     }
 
     void ShowContextMenu(Vector3 position, GameObject target)
@@ -90,22 +122,26 @@ public class ContextMenuManager : MonoBehaviour
             for (int i = 0; i < actions.Count; i++)
             {
                 string action = actions[i];
-                Button optionButton = Instantiate(optionPrefab, contextMenu.transform);
+                GameObject newButton = Instantiate(optionPrefab, contextMenu.transform).gameObject;
 
                 // Set the action text on the button's child TextMeshProUGUI component
-                TextMeshProUGUI buttonText = optionButton.GetComponentInChildren<TextMeshProUGUI>();
+                TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (buttonText != null)
                 {
                     buttonText.text = action;
                 }
 
                 // Position each option with spacing
-                RectTransform optionTransform = optionButton.GetComponent<RectTransform>();
+                RectTransform optionTransform = newButton.GetComponent<RectTransform>();
                 optionTransform.anchoredPosition = new Vector2(0, -i * (optionHeight + spacing));
                 Debug.Log("Created option: " + action);
 
-                // Set up the handler for clicks
-                OptionHandler handler = optionButton.gameObject.AddComponent<OptionHandler>();
+                // Add and set up the handler for clicks on the instantiated object
+                OptionHandler handler = newButton.GetComponent<OptionHandler>();
+                if (handler == null)
+                {
+                    handler = newButton.AddComponent<OptionHandler>();
+                }
                 handler.Setup(action, this);
             }
 

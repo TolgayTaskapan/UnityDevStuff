@@ -1,6 +1,5 @@
 using UnityEngine;
-using UnityEngine.UI; // Import for Button
-using TMPro; // Import for TextMeshProUGUI
+using UnityEngine.UI;
 
 public class OptionHandler : MonoBehaviour
 {
@@ -11,27 +10,20 @@ public class OptionHandler : MonoBehaviour
     {
         this.action = action;
         this.contextMenuManager = contextMenuManager;
+        Debug.Log($"[{gameObject.name}] Setup: Setting up button for action '{action}'.");
+    }
 
-        // Get the Button component attached to this GameObject
-        Button button = GetComponent<Button>();
-
-        // Check if Button component is present
-        if (button != null)
+    public void OnButtonClicked()
+    {
+        Debug.Log($"[{gameObject.name}] OnButtonClicked: Button for action '{action}' clicked.");
+        if (contextMenuManager != null)
         {
-            // Remove any previous listeners to avoid multiple triggers
-            button.onClick.RemoveAllListeners();
-            // Add the OnButtonClicked method as a listener for the onClick event
-            button.onClick.AddListener(OnButtonClicked);
+            Debug.Log($"[{gameObject.name}] OnButtonClicked: Calling OnActionSelected on ContextMenuManager with action '{action}'.");
+            contextMenuManager.OnActionSelected(action);
         }
         else
         {
-            Debug.LogError("Button component missing on OptionPrefab. Please attach a Button component.");
+            Debug.LogError($"[{gameObject.name}] OnButtonClicked: ContextMenuManager is null. Cannot perform action '{action}'.");
         }
-    }
-
-    private void OnButtonClicked()
-    {
-        Debug.Log("Button clicked: " + action);
-        contextMenuManager.OnActionSelected(action);
     }
 }
