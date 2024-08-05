@@ -5,4 +5,5 @@ using UnityEngine;
 public interface IInteractable
 {
     List<string> GetActions();
+    void PerformAction(string action); // Define PerformAction in the interface
 }

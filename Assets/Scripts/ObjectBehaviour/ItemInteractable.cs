@@ -6,10 +6,22 @@ public class ItemInteractable : MonoBehaviour, IInteractable
 {
     public Item item;
     public int quantity = 1;
+    public bool isInInventory = false; // Track if this item is in the inventory or not
 
     public List<string> GetActions()
     {
-        return new List<string> { "Pick Up", "Examine", "Use" };
+        List<string> actions = new List<string> { "Examine" };
+
+        if (isInInventory)
+        {
+            actions.AddRange(new List<string> { "Use", "Drop" });
+        }
+        else
+        {
+            actions.Add("Pick Up");
+        }
+
+        return actions;
     }
 
     public void PerformAction(string action)
@@ -19,7 +31,19 @@ public class ItemInteractable : MonoBehaviour, IInteractable
         {
             PickUpItem();
         }
-        // Handle other actions like Examine, Use, etc.
+        else if (action == "Drop")
+        {
+            DropItem();
+        }
+        else if (action == "Examine")
+        {
+            ExamineItem();
+        }
+        else if (action == "Use")
+        {
+            UseItem();
+        }
+        // Handle other actions
     }
 
     private void PickUpItem()
@@ -43,5 +67,32 @@ public class ItemInteractable : MonoBehaviour, IInteractable
         {
             Debug.LogError("Inventory not found or item is null.");
         }
+    }
+
+    private void DropItem()
+    {
+        Inventory inventory = FindObjectOfType<Inventory>();
+        if (inventory != null && item != null)
+        {
+            Debug.Log("Dropping item from inventory: " + item.itemName);
+            inventory.DropItem(item, quantity);
+            // You can also instantiate the item in the world if needed
+        }
+        else
+        {
+            Debug.LogError("Inventory not found or item is null.");
+        }
+    }
+
+    private void ExamineItem()
+    {
+        Debug.Log("Examining item: " + item.itemName);
+        // Implement examination logic, like displaying item details
+    }
+
+    private void UseItem()
+    {
+        Debug.Log("Using item: " + item.itemName);
+        // Implement item usage logic
     }
 }

@@ -46,7 +46,7 @@ public class InventoryUI : MonoBehaviour
             {
                 GameObject slotObj = Instantiate(slotPrefab, inventoryPanel.transform);
 
-                // Ensure the ItemIcon and Quantity components exist and are correctly assigned
+                // Set the item icon and quantity display
                 Image icon = slotObj.transform.Find("ItemIcon")?.GetComponent<Image>();
                 TextMeshProUGUI quantityText = slotObj.transform.Find("Quantity")?.GetComponent<TextMeshProUGUI>();
 
@@ -69,6 +69,16 @@ public class InventoryUI : MonoBehaviour
                 {
                     Debug.LogError("Quantity TextMeshProUGUI component not found in the slot prefab.");
                 }
+
+                // Set the ItemInteractable component with the item data
+                ItemInteractable itemInteractable = slotObj.GetComponent<ItemInteractable>();
+                if (itemInteractable == null)
+                {
+                    itemInteractable = slotObj.AddComponent<ItemInteractable>();
+                }
+                itemInteractable.item = slot.item;
+                itemInteractable.quantity = slot.quantity;
+                itemInteractable.isInInventory = true; // Mark as in inventory
             }
         }
     }

@@ -82,6 +82,13 @@ public class Inventory : MonoBehaviour
             InventoryChanged?.Invoke(); // Trigger the event
         }
     }
+
+    public void DropItem(Item item, int quantity)
+    {
+        RemoveItem(item, quantity);
+        // Implement item drop logic (e.g., instantiate item in the world)
+        Debug.Log($"Dropped {quantity} of {item.itemName}");
+    }
 }
 
 [System.Serializable]

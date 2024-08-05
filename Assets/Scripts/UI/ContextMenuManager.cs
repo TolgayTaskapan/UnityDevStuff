@@ -10,7 +10,7 @@ public class ContextMenuManager : MonoBehaviour
 {
     public GameObject contextMenu; // Reference to the context menu panel
     public Button optionPrefab; // Prefab for the button options
-    public GraphicRaycaster graphicRaycaster; // Reference to the GraphicRaycaster component
+    public List<GraphicRaycaster> graphicRaycasters; // List of GraphicRaycasters for multiple canvases
     public EventSystem eventSystem; // Reference to the EventSystem
     private Camera cam;
     private GameObject currentTarget; // The object that was right-clicked
@@ -41,19 +41,61 @@ public class ContextMenuManager : MonoBehaviour
         Vector3 screenPosition = Mouse.current.position.ReadValue();
         Debug.Log("Right-click detected at screen position: " + screenPosition);
 
-        Ray ray = cam.ScreenPointToRay(screenPosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray, out hit))
+        PointerEventData pointerData = new PointerEventData(eventSystem)
         {
-            currentTarget = hit.collider.gameObject;
-            Debug.Log("Raycast hit: " + currentTarget.name);
+            position = screenPosition
+        };
 
-            ShowContextMenu(screenPosition, currentTarget);
+        List<RaycastResult> results = new List<RaycastResult>();
+
+        // Raycast to UI elements across multiple canvases
+        foreach (var raycaster in graphicRaycasters)
+        {
+            List<RaycastResult> canvasResults = new List<RaycastResult>();
+            raycaster.Raycast(pointerData, canvasResults);
+            results.AddRange(canvasResults);
+        }
+
+        Debug.Log($"Number of UI elements hit: {results.Count}");
+        foreach (var result in results)
+        {
+            Debug.Log($"Hit UI element: {result.gameObject.name}");
+        }
+
+        if (results.Count > 0)
+        {
+            Debug.Log("UI element clicked. Showing context menu for UI.");
+
+            foreach (RaycastResult result in results)
+            {
+
+                GameObject clickedObject = result.gameObject;
+                Debug.Log("Clicked object: " + clickedObject.ToString());
+                Debug.Log("Object tag check...");
+                if (clickedObject.CompareTag("Item"))
+                {
+                    Debug.Log("Object tagged Item, openning showing context menu...");
+                    currentTarget = clickedObject;
+                    ShowContextMenu(screenPosition, currentTarget, true);
+                    return;
+                }
+            }
         }
         else
         {
-            Debug.Log("Raycast did not hit any collider.");
+            Ray ray = cam.ScreenPointToRay(screenPosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                currentTarget = hit.collider.gameObject;
+                Debug.Log("Raycast hit: " + currentTarget.name);
+                ShowContextMenu(screenPosition, currentTarget, false);
+            }
+            else
+            {
+                Debug.Log("Raycast did not hit any collider.");
+            }
         }
     }
 
@@ -61,19 +103,20 @@ public class ContextMenuManager : MonoBehaviour
     {
         Debug.Log("Left or middle mouse button clicked.");
 
-        // Set up PointerEventData with current mouse position
         PointerEventData pointerData = new PointerEventData(eventSystem)
         {
             position = Mouse.current.position.ReadValue()
         };
 
-        // Create a list to receive all results
         List<RaycastResult> results = new List<RaycastResult>();
 
-        // Raycast to UI elements
-        graphicRaycaster.Raycast(pointerData, results);
+        foreach (var raycaster in graphicRaycasters)
+        {
+            List<RaycastResult> canvasResults = new List<RaycastResult>();
+            raycaster.Raycast(pointerData, canvasResults);
+            results.AddRange(canvasResults);
+        }
 
-        // Check if any UI element is clicked
         bool uiClicked = false;
         foreach (RaycastResult result in results)
         {
@@ -94,20 +137,18 @@ public class ContextMenuManager : MonoBehaviour
             contextMenu.SetActive(false);
         }
 
-        optionClicked = uiClicked; // Update the flag based on UI interaction
+        optionClicked = uiClicked;
     }
 
-    void ShowContextMenu(Vector3 position, GameObject target)
+    public void ShowContextMenu(Vector3 position, GameObject target, bool isInInventory)
     {
         Debug.Log("Showing context menu for target: " + target.name);
-        // Clear existing options
         foreach (Transform child in contextMenu.transform)
         {
             Destroy(child.gameObject);
             Debug.Log("Destroyed previous context menu option.");
         }
 
-        // Check if the object implements IInteractable
         IInteractable interactable = target.GetComponent<IInteractable>();
 
         if (interactable != null)
@@ -115,8 +156,17 @@ public class ContextMenuManager : MonoBehaviour
             Debug.Log("IInteractable implementation found on target: " + target.name);
             List<string> actions = interactable.GetActions();
 
+            if (isInInventory)
+            {
+                actions.Remove("Pick Up");
+            }
+            else
+            {
+                actions.Remove("Drop");
+            }
+
             float optionHeight = optionPrefab.GetComponent<RectTransform>().sizeDelta.y;
-            float spacing = 5f; // Space between options
+            float spacing = 5f;
             Vector3 startPosition = new Vector3(position.x, position.y - optionHeight / 2, position.z);
 
             for (int i = 0; i < actions.Count; i++)
@@ -124,19 +174,16 @@ public class ContextMenuManager : MonoBehaviour
                 string action = actions[i];
                 GameObject newButton = Instantiate(optionPrefab, contextMenu.transform).gameObject;
 
-                // Set the action text on the button's child TextMeshProUGUI component
                 TextMeshProUGUI buttonText = newButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (buttonText != null)
                 {
                     buttonText.text = action;
                 }
 
-                // Position each option with spacing
                 RectTransform optionTransform = newButton.GetComponent<RectTransform>();
                 optionTransform.anchoredPosition = new Vector2(0, -i * (optionHeight + spacing));
                 Debug.Log("Created option: " + action);
 
-                // Add and set up the handler for clicks on the instantiated object
                 OptionHandler handler = newButton.GetComponent<OptionHandler>();
                 if (handler == null)
                 {
@@ -145,10 +192,13 @@ public class ContextMenuManager : MonoBehaviour
                 handler.Setup(action, this);
             }
 
-            // Adjust context menu size and show it
             RectTransform contextMenuTransform = contextMenu.GetComponent<RectTransform>();
+            Debug.Log($"Context menu RectTransform size: {contextMenuTransform.sizeDelta}");
             contextMenuTransform.sizeDelta = new Vector2(contextMenuTransform.sizeDelta.x, actions.Count * (optionHeight + spacing));
             contextMenu.SetActive(true);
+            Debug.Log("Context menu set to active.");
+            Debug.Log($"Context menu active state: {contextMenu.activeSelf}");
+            Debug.Log($"Context menu position: {contextMenu.transform.position}");
             contextMenu.transform.position = position;
             Debug.Log("Context menu displayed with " + actions.Count + " options.");
         }
@@ -160,7 +210,7 @@ public class ContextMenuManager : MonoBehaviour
 
     public void OnActionSelected(string action)
     {
-        optionClicked = true; // Mark that an option was clicked
+        optionClicked = true;
         Debug.Log("Action selected: " + action);
 
         if (currentTarget == null)
@@ -186,7 +236,6 @@ public class ContextMenuManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Disable actions when the object is destroyed
         rightClickAction.Disable();
         leftClickAction.Disable();
     }
