@@ -121,6 +121,7 @@ public class Inventory : MonoBehaviour
                             itemInteractable.quantity = quantity;
                             itemInteractable.isInInventory = false;
                             Debug.Log($"Dropped {quantity} of {item.itemName} at position {droppedItem.transform.position}");
+                            RemoveItem(item, quantity);
                         }
                         else
                         {

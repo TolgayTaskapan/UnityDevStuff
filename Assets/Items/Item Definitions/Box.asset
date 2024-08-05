@@ -15,5 +15,5 @@ MonoBehaviour:
   itemPrefab: {fileID: 2577293184451399800, guid: 7496629fe885f504294a83dc48d733ba, type: 3}
   itemName: White Box
   icon: {fileID: 21300000, guid: 96611995a056dad4e9205a15b231ba2a, type: 3}
-  isStackable: 0
+  isStackable: 1
   maxStackSize: 64
