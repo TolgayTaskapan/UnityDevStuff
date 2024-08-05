@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8fab05ad13f6ac42af844692ae9eec9, type: 3}
   m_Name: Box
   m_EditorClassIdentifier: 
+  itemPrefab: {fileID: 2577293184451399800, guid: 7496629fe885f504294a83dc48d733ba, type: 3}
   itemName: White Box
   icon: {fileID: 21300000, guid: 96611995a056dad4e9205a15b231ba2a, type: 3}
-  isStackable: 1
+  isStackable: 0
   maxStackSize: 64

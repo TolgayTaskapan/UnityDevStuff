@@ -85,9 +85,67 @@ public class Inventory : MonoBehaviour
 
     public void DropItem(Item item, int quantity)
     {
-        RemoveItem(item, quantity);
-        // Implement item drop logic (e.g., instantiate item in the world)
-        Debug.Log($"Dropped {quantity} of {item.itemName}");
+        if (item == null || quantity <= 0)
+        {
+            Debug.LogError("Invalid item or quantity specified for dropping.");
+            return;
+        }
+
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            Vector3 playerPosition = player.transform.position;
+            Vector3 forwardDirection = player.transform.forward;
+            Vector3 initialDropPosition = playerPosition + forwardDirection * 1.5f + Vector3.up * 0.5f; // Start above potential ground interference
+
+            RaycastHit groundHit;
+            if (Physics.Raycast(initialDropPosition, Vector3.down, out groundHit))
+            {
+                Vector3 dropPosition = groundHit.point; // This is the ground hit point
+
+                GameObject itemPrefab = item.itemPrefab;
+                if (itemPrefab != null)
+                {
+                    GameObject droppedItem = Instantiate(itemPrefab, dropPosition, Quaternion.identity);
+                    Collider itemCollider = droppedItem.GetComponent<Collider>();
+                    if (itemCollider != null)
+                    {
+                        // Correct placement by adding half the collider's full height
+                        float colliderFullHeight = itemCollider.bounds.size.y;
+                        droppedItem.transform.position += Vector3.up * colliderFullHeight * 0.5f;
+
+                        ItemInteractable itemInteractable = droppedItem.GetComponent<ItemInteractable>();
+                        if (itemInteractable != null)
+                        {
+                            itemInteractable.item = item;
+                            itemInteractable.quantity = quantity;
+                            itemInteractable.isInInventory = false;
+                            Debug.Log($"Dropped {quantity} of {item.itemName} at position {droppedItem.transform.position}");
+                        }
+                        else
+                        {
+                            Debug.LogError("ItemInteractable component not found on the dropped item prefab.");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("Item prefab is null or does not have a collider component.");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Item prefab is null. Cannot instantiate dropped item.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("No ground detected below initial drop position.");
+            }
+        }
+        else
+        {
+            Debug.LogError("Player object not found in the scene.");
+        }
     }
 }
 
