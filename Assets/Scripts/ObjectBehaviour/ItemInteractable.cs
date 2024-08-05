@@ -11,7 +11,7 @@ public class ItemInteractable : MonoBehaviour, IInteractable
     public List<string> GetActions()
     {
         List<string> actions = new List<string> { "Examine" };
-
+        Debug.Log("Checking whether item is in inventory: " + isInInventory);
         if (isInInventory)
         {
             actions.AddRange(new List<string> { "Use", "Drop" });

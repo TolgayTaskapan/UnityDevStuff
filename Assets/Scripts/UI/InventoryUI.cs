@@ -71,7 +71,7 @@ public class InventoryUI : MonoBehaviour
                 }
 
                 // Set the ItemInteractable component with the item data
-                ItemInteractable itemInteractable = slotObj.GetComponent<ItemInteractable>();
+                ItemInteractable itemInteractable = icon.GetComponent<ItemInteractable>();
                 if (itemInteractable == null)
                 {
                     itemInteractable = slotObj.AddComponent<ItemInteractable>();
