@@ -11,29 +11,41 @@ public class ItemInteractable : MonoBehaviour, IInteractable
     public List<string> GetActions()
     {
         List<string> actions = new List<string> { "Examine" };
-        Debug.Log("Checking whether item is in inventory: " + isInInventory);
         if (isInInventory)
         {
-            actions.AddRange(new List<string> { "Use", "Drop" });
+            actions.Add("Use");
+            if (quantity >= 1) actions.Add("Drop");
+            if (quantity >= 5) actions.Add("Drop 5");
+            if (quantity >= 10) actions.Add("Drop 10");
+            if (quantity > 1) actions.Add("Drop All");
         }
         else
         {
             actions.Add("Pick Up");
         }
-
         return actions;
     }
-
     public void PerformAction(string action)
     {
-        Debug.Log("PerformAction called with action: " + action);
         if (action == "Pick Up")
         {
             PickUpItem();
         }
         else if (action == "Drop")
         {
-            DropItem();
+            DropItem(1);
+        }
+        else if (action == "Drop 5")
+        {
+            DropItem(5);
+        }
+        else if (action == "Drop 10")
+        {
+            DropItem(10);
+        }
+        else if (action == "Drop All")
+        {
+            DropItem(quantity);
         }
         else if (action == "Examine")
         {
@@ -43,7 +55,6 @@ public class ItemInteractable : MonoBehaviour, IInteractable
         {
             UseItem();
         }
-        // Handle other actions
     }
 
     private void PickUpItem()
@@ -69,18 +80,12 @@ public class ItemInteractable : MonoBehaviour, IInteractable
         }
     }
 
-    private void DropItem()
+    private void DropItem(int dropQuantity)
     {
         Inventory inventory = FindObjectOfType<Inventory>();
         if (inventory != null && item != null)
         {
-            Debug.Log("Dropping item from inventory: " + item.itemName);
-            inventory.DropItem(item, quantity);
-            // You can also instantiate the item in the world if needed
-        }
-        else
-        {
-            Debug.LogError("Inventory not found or item is null.");
+            inventory.DropItem(item, dropQuantity);
         }
     }
 
